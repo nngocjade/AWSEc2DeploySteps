@@ -1,0 +1,80 @@
+USERS GUIDE:  https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/putty.html
+
+Deploying a website, and a web application to an EC2 Instance:
+Launch Server:
+	- log into AWS mgmt console
+	- go to EC2 service
+	- launch a new instance
+		- ubuntu, free tier, all default settings, edit security group:
+			- port 22 "only my IP"
+			- port 80 "anywhere"
+			- port 8080 "anywhere" 
+		- download key pair if you create a new one
+			- mv this .pem file into your ~/.ssh directory (Mac/Linux)
+			- chmod 400 this.pem file (Mac Linux)
+			- for PC will use PuttyGen to convert .pem file to .ppk file for use in Putty
+	- connect to instance
+		- click "connect" button in AWS EC2 Mgmt Console, copy connection string
+			- "ssh -i MyPem.pem ubuntu@ec2..."
+			- Mac/Linux Users:
+				- run this "ssh" command from the terminal
+				- make sure the path to .pem file is valid 
+			- PC users:
+				- Convert the .pem file into a .ppk file using PuttyGen
+				- Open Putty, configure connection
+					- add hostname
+					- add .ppk file in "SSH -> Auth" section
+					- save connection in main "Setting" page of Putty
+				- Connect with Putty
+					- This opens a terminal window that is connected to the server
+	- Install Software:
+		- sudo apt install default-jdk
+			- installs Java
+		- sudo apt install apache2
+			- install apache web server
+			- put html, css, js files in "/var/www/html" to be served over the web
+			- visit your site by simply going to the IP addr of the EC2 instance in a web browser
+		- sudo apt install tomcat8
+			- install apache tomcat web application server
+			- likely installed at "/var/lib/tomcat8/"
+			- copy any .war file into the "/var/lib/tomcat8/webapps" folder and it will deploy automatically
+			- test you api by hitting the endpoints with port 8080 in the url, then the API endpoint
+	- Prepare Java Spring application for deployment
+		- Test application locally to verify it runs
+		- add "extends SpringBootServletInitializer" to class definition of class containing the main() method
+		- add the following method to that same class:
+			   @Override
+			   protected SpringApplicationBuilder configure(
+			           SpringApplicationBuilder builder) {
+			       return builder.sources(DemoApplication.class);
+			   }
+		- edit the pom.xml file
+			- add <packaging>war</packaging> tag under <description> tag
+			- <finalName>SOME_NAME</finalName> within the <build> tags
+			- add the following two dependencies within the <dependencies> tags
+				<dependency>
+				   <groupId>javax.xml.bind</groupId>
+				   <artifactId>jaxb-api</artifactId>
+				   <version>2.3.0</version>
+				</dependency>
+				<dependency>
+				   <groupId>org.springframework.boot</groupId>
+				   <artifactId>spring-boot-starter-tomcat</artifactId>
+				   <scope>provided</scope>
+				</dependency>
+	- Build the application using Maven
+		- cd to root of application (putty) cd ~
+		- mvn clean compile (in cmd prompt)
+		- mvn clean package (in cmd prompt)
+	- SCP file to server:
+		- scp -i /path/to/file.pem target/APP_FINAL_NAME.war ubuntu@ec2.....:~ 
+		- note the ":~" at the end of the URL above, that indicates that we want to save the file in the "~" directory on the server
+	- WinSCP for PC users
+		- launch WinSCP
+		- open connection to server, drag and drop .war file into ~ directory on server
+		(drag and drop .war file into home/ubuntu)
+	- Putty 
+		- sudo mv .war file to /var/lib/tomcat8/webapps/ (sudo mv .war /var/lib/tomcat8/webapps/)
+
+	- Copy .war file into Tomcat "webapps" directory 
+		- test app at IP addr :8080s
